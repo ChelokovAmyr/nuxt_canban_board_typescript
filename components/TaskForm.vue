@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch, onUnmounted } from 'vue'
+import { reactive, computed, onUnmounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 
@@ -23,77 +23,91 @@ const emit = defineEmits<{
 
 const store = useTaskStore()
 
+// Реактивная форма
 const form = reactive({
   title: '',
   description: '',
   status: 'todo' as TaskStatus
 })
 
+// Вычисляемое свойство для синхронизации с props
+const currentTask = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
+// Заполняем форму данными при монтировании, если есть modelValue
+if (props.modelValue) {
+  form.title = props.modelValue.title
+  form.description = props.modelValue.description || ''
+  form.status = props.modelValue.status
+}
+
+// Сброс формы
 const resetForm = () => {
   form.title = ''
   form.description = ''
   form.status = 'todo'
 }
 
-watch(() => props.modelValue, (task) => {
-  if (task) {
-    form.title = task.title
-    form.description = task.description || ''
-    form.status = task.status
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
-
+// Таймер для дебаунса
 let updateTimeout: NodeJS.Timeout | null = null
 
-watch(form, (newForm) => {
-  // Сохраняем значение в переменную для использования в setTimeout
-  const modelValue = props.modelValue
-
-  // Если редактируем существующую задачу и есть ID
-  if (modelValue?.id && props.isEditing) {
-    if (updateTimeout) clearTimeout(updateTimeout)
-
-    updateTimeout = setTimeout(() => {
-      // Используем сохраненное значение вместо props.modelValue
-      if (modelValue?.id) {
-        store.update(modelValue.id, { ...newForm })
-        emit('update', {
-          id: modelValue.id,
-          ...newForm
-        })
-      }
-    }, 300)
+// Обработчик изменений полей (для дебаунса при редактировании)
+const onFieldChange = () => {
+  // Если не редактируем существующую задачу, выходим
+  if (!props.isEditing || !props.modelValue?.id) {
+    return
   }
-}, { deep: true })
 
-onUnmounted(() => {
-  if (updateTimeout) clearTimeout(updateTimeout)
-})
+  // Очищаем предыдущий таймаут
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+  }
 
+  // Устанавливаем новый таймаут для обновления
+  updateTimeout = setTimeout(() => {
+    if (props.modelValue?.id) {
+      store.update(props.modelValue.id, { ...form })
+      emit('update', {
+        id: props.modelValue.id,
+        ...form
+      })
+    }
+  }, 300)
+}
+
+// Обработчик отправки формы
 function onSubmit() {
   if (!form.title.trim()) return
 
-  const modelValue = props.modelValue
-
-  if (modelValue?.id && props.isEditing) {
-    store.update(modelValue.id, { ...form })
+  if (props.modelValue?.id && props.isEditing) {
+    // Явное обновление при сохранении
+    store.update(props.modelValue.id, { ...form })
     emit('update', {
-      id: modelValue.id,
+      id: props.modelValue.id,
       ...form
     })
     emit('update:modelValue', null)
   } else {
+    // Создание новой задачи
     emit('save', { ...form })
     resetForm()
   }
 }
 
+// Обработчик отмены
 function onCancel() {
   emit('update:modelValue', null)
   resetForm()
 }
+
+// Очистка таймера при размонтировании
+onUnmounted(() => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
+  }
+})
 </script>
 
 <template>
@@ -103,22 +117,25 @@ function onCancel() {
     </h2>
 
     <input
-      v-model="form.title"
-      placeholder="Title *"
-      required
-      class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        v-model="form.title"
+        @input="onFieldChange"
+        placeholder="Title *"
+        required
+        class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
 
     <textarea
-      v-model="form.description"
-      placeholder="Description"
-      rows="3"
-      class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        v-model="form.description"
+        @input="onFieldChange"
+        placeholder="Description"
+        rows="3"
+        class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
 
     <select
-      v-model="form.status"
-      class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        v-model="form.status"
+        @change="onFieldChange"
+        class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       <option value="todo">To Do</option>
       <option value="in-progress">In Progress</option>
@@ -127,17 +144,17 @@ function onCancel() {
 
     <div class="flex gap-2 pt-2">
       <button
-        type="submit"
-        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          type="submit"
+          class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
       >
         {{ isEditing ? 'Update Task' : 'Add Task' }}
       </button>
 
       <button
-        v-if="isEditing"
-        type="button"
-        @click="onCancel"
-        class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          v-if="isEditing"
+          type="button"
+          @click="onCancel"
+          class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
       >
         Cancel
       </button>
