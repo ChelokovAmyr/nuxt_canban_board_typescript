@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 import TaskForm from '~/components/TaskForm.vue'
@@ -9,12 +9,14 @@ const store = useTaskStore()
 const editingTask = ref<TaskDTO | null>(null)
 const currentTab = ref<'list' | 'kanban'>('list')
 
+// ---------------- Fetch tasks on mount ----------------
 onMounted(async () => {
   await store.fetchAll()
 })
 
+// ---------------- Task operations ----------------
 function editTask(task: TaskDTO) {
-  editingTask.value = { ...task }
+  editingTask.value = { ...task } // делаем копию для редактирования
 }
 
 async function deleteTask(task: TaskDTO) {
@@ -39,6 +41,13 @@ function updateTaskStatus(task: TaskDTO, newStatus: TaskStatus) {
   }
 }
 
+// ---------------- Reactive computed statistics ----------------
+const totalTasks = computed(() => store.tasks.length)
+const todoTasks = computed(() => store.tasks.filter(t => t.status === 'todo').length)
+const inProgressTasks = computed(() => store.tasks.filter(t => t.status === 'in-progress').length)
+const doneTasks = computed(() => store.tasks.filter(t => t.status === 'done').length)
+
+// ---------------- CSS helper ----------------
 function statusClass(status: TaskStatus) {
   switch (status) {
     case 'todo': return 'bg-gray-100 text-gray-800'
@@ -55,8 +64,8 @@ function statusClass(status: TaskStatus) {
     <!-- Tab Navigation -->
     <div class="mb-6 flex gap-2 border-b border-gray-200 pb-4">
       <button
-        @click="currentTab = 'list'"
-        :class="[
+          @click="currentTab = 'list'"
+          :class="[
           'px-6 py-2 rounded-lg font-medium transition-colors',
           currentTab === 'list'
             ? 'bg-blue-500 text-white shadow-md'
@@ -66,8 +75,8 @@ function statusClass(status: TaskStatus) {
         📋 List View
       </button>
       <button
-        @click="currentTab = 'kanban'"
-        :class="[
+          @click="currentTab = 'kanban'"
+          :class="[
           'px-6 py-2 rounded-lg font-medium transition-colors',
           currentTab === 'kanban'
             ? 'bg-blue-500 text-white shadow-md'
@@ -81,18 +90,18 @@ function statusClass(status: TaskStatus) {
     <!-- Task Form -->
     <div class="mb-8">
       <TaskForm
-        @save="onSave"
-        :modelValue="editingTask"
-        @update:modelValue="editingTask = $event"
+          @save="onSave"
+          :modelValue="editingTask"
+          @update:modelValue="editingTask = $event"
       />
     </div>
 
     <!-- List View -->
     <div v-if="currentTab === 'list'" class="space-y-3">
       <div
-        v-for="task in store.tasks"
-        :key="task.id"
-        class="border border-gray-200 p-5 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow"
+          v-for="task in store.tasks"
+          :key="task.id"
+          class="border border-gray-200 p-5 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow"
       >
         <div class="flex justify-between items-start">
           <div class="flex-1">
@@ -100,10 +109,7 @@ function statusClass(status: TaskStatus) {
             <p class="text-gray-600 mb-3">{{ task.description || 'No description' }}</p>
             <div class="flex items-center gap-3">
               <span
-                :class="[
-                  statusClass(task.status),
-                  'px-3 py-1 rounded-full text-sm font-medium capitalize'
-                ]"
+                  :class="[statusClass(task.status), 'px-3 py-1 rounded-full text-sm font-medium capitalize']"
               >
                 {{ task.status }}
               </span>
@@ -114,14 +120,14 @@ function statusClass(status: TaskStatus) {
           </div>
           <div class="flex gap-2 ml-4">
             <button
-              @click="editTask(task)"
-              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                @click="editTask(task)"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
               ✏️ Edit
             </button>
             <button
-              @click="deleteTask(task)"
-              class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                @click="deleteTask(task)"
+                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
             >
               🗑️ Delete
             </button>
@@ -131,8 +137,8 @@ function statusClass(status: TaskStatus) {
 
       <!-- Empty State -->
       <div
-        v-if="store.tasks.length === 0"
-        class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300"
+          v-if="store.tasks.length === 0"
+          class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300"
       >
         <div class="text-6xl mb-4">📝</div>
         <h3 class="text-xl font-semibold text-gray-600 mb-2">No tasks yet</h3>
@@ -143,10 +149,10 @@ function statusClass(status: TaskStatus) {
     <!-- Kanban View -->
     <div v-else>
       <TaskGrid
-        :tasks="store.tasks"
-        @edit="editTask"
-        @delete="deleteTask"
-        @update-status="updateTaskStatus"
+          :tasks="store.tasks"
+          @edit="editTask"
+          @delete="deleteTask"
+          @update-status="updateTaskStatus"
       />
     </div>
 
@@ -154,25 +160,19 @@ function statusClass(status: TaskStatus) {
     <div v-if="store.tasks.length > 0" class="mt-8 pt-6 border-t border-gray-200">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <div class="text-2xl font-bold text-gray-800">{{ store.tasks.length }}</div>
+          <div class="text-2xl font-bold text-gray-800">{{ totalTasks }}</div>
           <div class="text-sm text-gray-600">Total Tasks</div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <div class="text-2xl font-bold text-blue-600">
-            {{ store.tasks.filter(t => t.status === 'todo').length }}
-          </div>
+          <div class="text-2xl font-bold text-blue-600">{{ todoTasks }}</div>
           <div class="text-sm text-gray-600">To Do</div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <div class="text-2xl font-bold text-yellow-600">
-            {{ store.tasks.filter(t => t.status === 'in-progress').length }}
-          </div>
+          <div class="text-2xl font-bold text-yellow-600">{{ inProgressTasks }}</div>
           <div class="text-sm text-gray-600">In Progress</div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-          <div class="text-2xl font-bold text-green-600">
-            {{ store.tasks.filter(t => t.status === 'done').length }}
-          </div>
+          <div class="text-2xl font-bold text-green-600">{{ doneTasks }}</div>
           <div class="text-sm text-gray-600">Done</div>
         </div>
       </div>

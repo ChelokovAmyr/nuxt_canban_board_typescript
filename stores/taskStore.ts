@@ -7,59 +7,70 @@ export const useTaskStore = defineStore('task', {
   }),
 
   actions: {
+    // ------------------ Fetch all tasks ------------------
     async fetchAll() {
       try {
-        this.tasks = await $fetch<TaskDTO[]>('/api/tasks')
+        const data = await $fetch<TaskDTO[]>('/api/tasks')
+        this.tasks = data
       } catch (err) {
         console.error('Failed to fetch tasks:', err)
         this.tasks = []
       }
     },
 
+    // ------------------ Add a new task ------------------
     async add(taskData: { title: string; description?: string; status?: TaskStatus }) {
       try {
         const newTask = await $fetch<TaskDTO>('/api/tasks', {
           method: 'POST',
           body: taskData
         })
+        // реактивно добавляем в массив
         this.tasks.push(newTask)
       } catch (err) {
         console.error('Failed to add task:', err)
       }
     },
 
+    // ------------------ Update existing task ------------------
     async update(
-      id: string,
-      taskData: Partial<Pick<TaskDTO, 'title' | 'description' | 'status'>>
+        id: string,
+        taskData: Partial<Pick<TaskDTO, 'title' | 'description' | 'status'>>
     ) {
       const idx = this.tasks.findIndex(t => t.id === id)
       if (idx === -1) return
 
-      // Создаем обновленную задачу с правильным типом
-      const updatedTask: TaskDTO = {
-        ...this.tasks[idx],
-        ...taskData
-      } as TaskDTO;
+      const oldTask = this.tasks[idx]!  // <-- говорим TS: точно есть
 
-      // оптимистично обновляем локально
-      this.tasks[idx] = updatedTask;
+      // ------------------ Локальное обновление (оптимистично) ------------------
+      this.tasks[idx] = {
+        id: oldTask.id,
+        title: taskData.title ?? oldTask.title,
+        description: taskData.description ?? oldTask.description,
+        status: taskData.status ?? oldTask.status,
+        createdAt: oldTask.createdAt
+      }
 
       try {
-        const serverUpdatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
+        // ------------------ Обновление на сервере ------------------
+        const updatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
           method: 'PUT',
           body: taskData
         })
-        this.tasks[idx] = serverUpdatedTask;
+        // ------------------ Синхронизация с сервером ------------------
+        this.tasks[idx] = updatedTask
       } catch (err) {
         console.error('Failed to update task:', err)
-        // При ошибке перезагружаем данные с сервера
-        await this.fetchAll();
+        // ------------------ При ошибке перезагружаем данные с сервера ------------------
+        await this.fetchAll()
       }
     },
 
+    // ------------------ Remove task ------------------
     async remove(id: string) {
       try {
         await $fetch(`/api/tasks/${id}`, { method: 'DELETE' })
+        // реактивно удаляем
         this.tasks = this.tasks.filter(t => t.id !== id)
       } catch (err) {
         console.error('Failed to delete task:', err)
