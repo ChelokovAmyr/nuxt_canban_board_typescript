@@ -31,24 +31,17 @@ export const useTaskStore = defineStore('task', {
       id: string,
       taskData: Partial<Pick<TaskDTO, 'title' | 'description' | 'status'>>
     ) {
+      const idx = this.tasks.findIndex(t => t.id === id)
+      if (idx === -1) return
+
+      // оптимистично обновляем локально
+      this.tasks[idx] = { ...this.tasks[idx], ...taskData }
+
       try {
-        const idx = this.tasks.findIndex(t => t.id === id)
-        if (idx === -1) return
-
-        // обновляем только title, description, status
-        const updatedLocal = {
-          ...this.tasks[idx],
-          ...taskData
-        } as TaskDTO
-
-        this.tasks[idx] = updatedLocal
-
-        // отправляем на сервер
         const updatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
           method: 'PUT',
           body: taskData
         })
-
         this.tasks[idx] = updatedTask
       } catch (err) {
         console.error('Failed to update task:', err)
