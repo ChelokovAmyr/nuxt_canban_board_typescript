@@ -7,24 +7,17 @@
     "status": "done"
   },
   {
-    "id": "99d0736c-a5ef-4967-9e2d-2e678a8238e1",
-    "createdAt": "2025-09-01T09:32:02.146Z",
-    "title": "фыв123123",
-    "description": "фывфывфыв",
-    "status": "todo"
-  },
-  {
-    "id": "26106e8a-ca12-4cbf-895a-52dce31f765d",
-    "createdAt": "2025-09-01T09:32:14.004Z",
-    "title": "1231",
-    "description": "23фывфы",
-    "status": "in-progress"
-  },
-  {
     "id": "16b0f51f-5fa1-499a-87f2-d8b514912e9e",
     "createdAt": "2025-09-01T09:37:42.619Z",
     "title": "asdasd",
     "description": "asdasd",
     "status": "todo"
+  },
+  {
+    "id": "62d68952-36f7-4c94-8420-b7fcbd9e4fd6",
+    "title": "asd",
+    "description": "asdasd",
+    "status": "done",
+    "createdAt": "2025-09-01T09:41:16.201Z"
   }
 ]

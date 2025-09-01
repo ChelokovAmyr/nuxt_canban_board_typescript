@@ -2,7 +2,6 @@
 import { reactive, watch } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
-import { PropType } from 'vue'
 
 const props = defineProps({
   modelValue: {
