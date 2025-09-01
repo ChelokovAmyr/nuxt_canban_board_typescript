@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { reactive, watch, ref, onUnmounted } from 'vue'
+import { reactive, watch, onUnmounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 
 const props = defineProps({
   modelValue: {
-    type: Object as PropType<TaskDTO>,
+    type: Object as PropType<TaskDTO | null>,
     required: false,
     default: null
   },
@@ -23,21 +23,18 @@ const emit = defineEmits<{
 
 const store = useTaskStore()
 
-// Локальное состояние формы
 const form = reactive({
   title: '',
   description: '',
   status: 'todo' as TaskStatus
 })
 
-// Сбрасываем форму к значениям по умолчанию
 const resetForm = () => {
   form.title = ''
   form.description = ''
   form.status = 'todo'
 }
 
-// Обновляем форму при изменении редактируемой задачи
 watch(() => props.modelValue, (task) => {
   if (task) {
     form.title = task.title
@@ -48,58 +45,63 @@ watch(() => props.modelValue, (task) => {
   }
 }, { immediate: true })
 
-// Дебаунс для избежания частых обновлений
 let updateTimeout: NodeJS.Timeout | null = null
 
 watch(form, (newForm) => {
+  // Сохраняем значение в переменную для использования в setTimeout
+  const modelValue = props.modelValue
+
   // Если редактируем существующую задачу и есть ID
-  if (props.modelValue?.id && props.isEditing) {
-    // Дебаунсим обновления чтобы не спамить API
+  if (modelValue?.id && props.isEditing) {
     if (updateTimeout) clearTimeout(updateTimeout)
 
     updateTimeout = setTimeout(() => {
-      store.update(props.modelValue.id, { ...newForm })
-      // Также эмитим обновление для родительского компонента
-      emit('update', {
-        id: props.modelValue.id,
-        ...newForm
-      })
+      // Используем сохраненное значение вместо props.modelValue
+      if (modelValue?.id) {
+        store.update(modelValue.id, { ...newForm })
+        emit('update', {
+          id: modelValue.id,
+          ...newForm
+        })
+      }
     }, 300)
   }
 }, { deep: true })
 
-// Очищаем таймер при размонтировании
 onUnmounted(() => {
   if (updateTimeout) clearTimeout(updateTimeout)
 })
 
 function onSubmit() {
-  if (!form.title.trim()) return // Защита от пустого заголовка
+  if (!form.title.trim()) return
 
-  if (props.modelValue?.id && props.isEditing) {
-    // Редактирование существующей задачи
-    store.update(props.modelValue.id, { ...form })
+  const modelValue = props.modelValue
+
+  if (modelValue?.id && props.isEditing) {
+    store.update(modelValue.id, { ...form })
     emit('update', {
-      id: props.modelValue.id,
+      id: modelValue.id,
       ...form
     })
+    emit('update:modelValue', null)
   } else {
-    // Создание новой задачи
     emit('save', { ...form })
     resetForm()
   }
 }
 
 function onCancel() {
-  if (props.isEditing) {
-    emit('update:modelValue', null)
-  }
+  emit('update:modelValue', null)
   resetForm()
 }
 </script>
 
 <template>
   <form @submit.prevent="onSubmit" class="mb-4 space-y-2 p-4 border rounded">
+    <h2 class="text-lg font-bold mb-2">
+      {{ isEditing ? 'Edit Task' : 'Create New Task' }}
+    </h2>
+
     <input
       v-model="form.title"
       placeholder="Title *"
