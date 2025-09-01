@@ -3,22 +3,15 @@ import { ref, onMounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 import TaskForm from '~/components/TaskForm.vue'
+import TaskGrid from '~/components/TaskGrid.vue'
 
 const store = useTaskStore()
 const editingTask = ref<TaskDTO | undefined>(undefined)
-const currentTab = ref<'list' | 'kanban'>('list')
+const currentTab = ref<'list' | 'grid'>('list')
 
 onMounted(async () => {
-  try {
-    await store.fetchAll()
-  } catch (err) {
-    console.error('Failed to load tasks:', err)
-  }
+  await store.fetchAll()
 })
-
-function updateTaskStatus({ task, status }: { task: TaskDTO; status: TaskStatus }) {
-  store.update(task.id, { ...task, status })
-}
 
 function editTask(task: TaskDTO) {
   editingTask.value = { ...task }
@@ -37,17 +30,6 @@ function onSave(taskData: { title: string; description?: string; status?: TaskSt
     store.add(taskData)
   }
 }
-
-function statusClass(status: TaskStatus) {
-  switch (status) {
-    case 'todo':
-      return 'bg-gray-100 text-gray-800'
-    case 'in-progress':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'done':
-      return 'bg-green-100 text-green-800'
-  }
-}
 </script>
 
 <template>
@@ -62,11 +44,11 @@ function statusClass(status: TaskStatus) {
       List
     </button>
     <button
-      @click="currentTab = 'kanban'"
-      :class="currentTab==='kanban' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
+      @click="currentTab = 'grid'"
+      :class="currentTab==='grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'"
       class="px-4 py-2 rounded"
     >
-      Kanban
+      Grid
     </button>
   </div>
 
@@ -81,35 +63,20 @@ function statusClass(status: TaskStatus) {
       <div>
         <h3 class="font-bold">{{ task.title }}</h3>
         <p class="text-gray-600">{{ task.description }}</p>
-        <p
-          :class="statusClass(task.status)"
-          class="mt-1 px-2 py-1 rounded text-sm w-max"
-        >
-          {{ task.status }}
-        </p>
+        <p class="mt-1 px-2 py-1 rounded text-sm w-max" :class="{
+          'bg-gray-100 text-gray-800': task.status==='todo',
+          'bg-yellow-100 text-yellow-800': task.status==='in-progress',
+          'bg-green-100 text-green-800': task.status==='done'
+        }">{{ task.status }}</p>
       </div>
       <div class="flex gap-2">
-        <button @click="editTask(task)" class="px-2 py-1 bg-blue-500 text-white rounded">
-          Edit
-        </button>
-        <button @click="deleteTask(task)" class="px-2 py-1 bg-red-500 text-white rounded">
-          Delete
-        </button>
+        <button @click="editTask(task)" class="px-2 py-1 bg-blue-500 text-white rounded">Edit</button>
+        <button @click="deleteTask(task)" class="px-2 py-1 bg-red-500 text-white rounded">Delete</button>
       </div>
     </div>
   </div>
 
   <div v-else>
-    <KanbanBoard
-      :tasks="store.tasks"
-      @edit="editTask"
-      @delete="deleteTask"
-      @updateStatus="updateTaskStatus"
-    />
-    <TaskGrid
-      :tasks="store.tasks"
-      @edit="editTask"
-      @delete="deleteTask"
-    />
+    <TaskGrid :tasks="store.tasks" @edit="editTask" @delete="deleteTask" />
   </div>
 </template>

@@ -1,4 +1,3 @@
-// ~/stores/taskStore.ts
 import { defineStore } from 'pinia'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 
@@ -28,14 +27,29 @@ export const useTaskStore = defineStore('task', {
       }
     },
 
-    async update(id: string, taskData: Partial<Pick<TaskDTO, 'title' | 'description' | 'status'>>) {
+    async update(
+      id: string,
+      taskData: Partial<Pick<TaskDTO, 'title' | 'description' | 'status'>>
+    ) {
       try {
+        const idx = this.tasks.findIndex(t => t.id === id)
+        if (idx === -1) return
+
+        // обновляем только title, description, status
+        const updatedLocal = {
+          ...this.tasks[idx],
+          ...taskData
+        } as TaskDTO
+
+        this.tasks[idx] = updatedLocal
+
+        // отправляем на сервер
         const updatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
           method: 'PUT',
           body: taskData
         })
-        const idx = this.tasks.findIndex(t => t.id === id)
-        if (idx !== -1) this.tasks[idx] = updatedTask
+
+        this.tasks[idx] = updatedTask
       } catch (err) {
         console.error('Failed to update task:', err)
       }
@@ -48,10 +62,6 @@ export const useTaskStore = defineStore('task', {
       } catch (err) {
         console.error('Failed to delete task:', err)
       }
-    },
-
-    async updateStatus(payload: { task: TaskDTO; status: TaskStatus }) {
-      await this.update(payload.task.id, { status: payload.status })
     }
   }
 })
