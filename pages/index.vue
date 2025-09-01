@@ -35,9 +35,12 @@ function onSave(taskData: { title: string; description?: string; status?: TaskSt
   }
 }
 
-function updateTaskStatus(task: TaskDTO, newStatus: TaskStatus) {
-  if (task.id) {
-    store.update(task.id, { ...task, status: newStatus })
+function updateTaskStatus({ taskId, newStatus }: { taskId: string; newStatus: TaskStatus }) {
+  if (taskId) {
+    const task = store.tasks.find(t => t.id === taskId)
+    if (task) {
+      store.update(taskId, { ...task, status: newStatus })
+    }
   }
 }
 
@@ -152,7 +155,7 @@ function statusClass(status: TaskStatus) {
           :tasks="store.tasks"
           @edit="editTask"
           @delete="deleteTask"
-          @update-status="updateTaskStatus"
+          @update:status="updateTaskStatus"
       />
     </div>
 

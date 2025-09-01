@@ -6,12 +6,13 @@
       :key="status"
       :data-status="status"
     >
-      <h3 class="col-title">{{ statusLabels[status] }}</h3>
+      <h3 class="col-title">{{ statusLabels[status] }} ({{ tasks.length }})</h3>
       <draggable
-        :list="columns[status]"
+        :list="tasks"
         group="tasks"
         item-key="id"
         class="drag-area"
+        :clone="cloneTask"
         @change="onChange($event, status)"
         @start="dragStart"
         @end="dragEnd"
@@ -32,12 +33,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import draggable from 'vuedraggable'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 
 const props = defineProps<{ tasks: TaskDTO[] }>()
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'update:status'])
 
 const statusLabels: Record<TaskStatus, string> = {
   'todo': 'To Do',
@@ -54,16 +55,31 @@ const columns = computed(() => {
   }
 })
 
-const currentlyDragging = ref<number | null>(null)
+const currentlyDragging = ref<string | null>(null)
+
+// Функция для клонирования задачи
+function cloneTask(task: TaskDTO) {
+  return { ...task }
+}
 
 function onChange(event: any, targetStatus: TaskStatus) {
   // Если задача была перемещена (не просто внутри той же колонки)
   if (event.added) {
     const movedTask = event.added.element
-    console.log(`Task ${movedTask.id} moved to ${targetStatus}`)
 
     // Эмитируем событие с обновленной задачей
-    emit('edit', { ...movedTask, status: targetStatus })
+    const updatedTask = {
+      ...movedTask,
+      status: targetStatus
+    }
+
+    emit('edit', updatedTask)
+
+    // Также эмитим отдельное событие для изменения статуса
+    emit('update:status', {
+      taskId: movedTask.id, // string тип
+      newStatus: targetStatus
+    })
   }
 }
 
