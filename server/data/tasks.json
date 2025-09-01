@@ -7,18 +7,11 @@
     "status": "todo"
   },
   {
-    "id": "8ff7019a-bf4d-49b9-bed9-97fe04b5a4ed",
-    "createdAt": "2025-09-01T08:34:44.936Z",
-    "title": "asdasd",
-    "description": "asdas",
-    "status": "todo"
-  },
-  {
     "id": "9ca1d19c-e47d-4649-86d2-6446997c6094",
+    "createdAt": "2025-09-01T08:35:15.164Z",
     "title": "asda",
     "description": "sdasd",
-    "status": "todo",
-    "createdAt": "2025-09-01T08:35:15.164Z"
+    "status": "done"
   },
   {
     "id": "a7962fe0-0ee6-4d8c-a37b-2e81348e1545",
