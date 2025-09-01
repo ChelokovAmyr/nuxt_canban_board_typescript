@@ -5,6 +5,7 @@ export const useTaskStore = defineStore('task', {
   state: () => ({
     tasks: [] as TaskDTO[]
   }),
+
   actions: {
     async fetchAll() {
       try {
@@ -34,17 +35,25 @@ export const useTaskStore = defineStore('task', {
       const idx = this.tasks.findIndex(t => t.id === id)
       if (idx === -1) return
 
+      // Создаем обновленную задачу с правильным типом
+      const updatedTask: TaskDTO = {
+        ...this.tasks[idx],
+        ...taskData
+      } as TaskDTO;
+
       // оптимистично обновляем локально
-      this.tasks[idx] = { ...this.tasks[idx], ...taskData }
+      this.tasks[idx] = updatedTask;
 
       try {
-        const updatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
+        const serverUpdatedTask = await $fetch<TaskDTO>(`/api/tasks/${id}`, {
           method: 'PUT',
           body: taskData
         })
-        this.tasks[idx] = updatedTask
+        this.tasks[idx] = serverUpdatedTask;
       } catch (err) {
         console.error('Failed to update task:', err)
+        // При ошибке перезагружаем данные с сервера
+        await this.fetchAll();
       }
     },
 

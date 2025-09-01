@@ -4,20 +4,20 @@
     "createdAt": "2025-09-01T09:02:46.593Z",
     "title": "12312",
     "description": "312312321",
-    "status": "todo"
+    "status": "in-progress"
   },
   {
     "id": "16b0f51f-5fa1-499a-87f2-d8b514912e9e",
     "createdAt": "2025-09-01T09:37:42.619Z",
     "title": "asdasd",
     "description": "asdasd",
-    "status": "todo"
+    "status": "in-progress"
   },
   {
     "id": "62d68952-36f7-4c94-8420-b7fcbd9e4fd6",
     "createdAt": "2025-09-01T09:41:16.201Z",
     "title": "asd",
     "description": "asdasd",
-    "status": "todo"
+    "status": "in-progress"
   }
 ]
