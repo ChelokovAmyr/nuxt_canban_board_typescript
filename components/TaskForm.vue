@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, onUnmounted } from 'vue'
+import { reactive, watch, onUnmounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 
@@ -22,88 +22,81 @@ const emit = defineEmits<{
 
 const store = useTaskStore()
 
-// Таймер для авто-сохранения
+// Форма — независимая реактивная копия
+const form = reactive({
+  title: '',
+  description: '',
+  status: 'todo' as TaskStatus
+})
+
+// Сбрасываем форму
+const resetForm = () => {
+  form.title = ''
+  form.description = ''
+  form.status = 'todo'
+}
+
+// ------------------ Watch за props.modelValue ------------------
+// Один аккуратный watch для синхронизации формы с внешним значением
+watch(
+    () => props.modelValue,
+    (task) => {
+      if (task) {
+        form.title = task.title
+        form.description = task.description || ''
+        form.status = task.status
+      } else {
+        resetForm()
+      }
+    },
+    { immediate: true }
+)
+
+// ------------------ Авто-сохранение ------------------
 let updateTimeout: NodeJS.Timeout | null = null
+
+const triggerAutoSave = () => {
+  const model = props.modelValue
+  if (!model?.id || !props.isEditing) return
+
+  if (updateTimeout) clearTimeout(updateTimeout)
+  updateTimeout = setTimeout(() => {
+    store.update(model.id, { ...form })
+    emit('update', { id: model.id, ...form })
+  }, 300)
+}
+
+// Слежение за формой для авто-сохранения
+watch(
+    form,
+    () => {
+      triggerAutoSave()
+    },
+    { deep: true }
+)
+
+// Очистка таймера при размонтировании
 onUnmounted(() => {
   if (updateTimeout) clearTimeout(updateTimeout)
 })
 
-// Форму делаем реактивной, но значения берем из props через computed
-const form = reactive({
-  title: computed({
-    get: () => props.modelValue?.title ?? '',
-    set: (val) => {
-      if (props.modelValue) props.modelValue.title = val
-      triggerAutoSave()
-    }
-  }),
-  description: computed({
-    get: () => props.modelValue?.description ?? '',
-    set: (val) => {
-      if (props.modelValue) props.modelValue.description = val
-      triggerAutoSave()
-    }
-  }),
-  status: computed({
-    get: () => props.modelValue?.status ?? 'todo',
-    set: (val) => {
-      if (props.modelValue) props.modelValue.status = val
-      triggerAutoSave()
-    }
-  })
-})
-
-// Сброс формы
-function resetForm() {
-  if (!props.modelValue) {
-    form.title = ''
-    form.description = ''
-    form.status = 'todo'
-  }
-}
-
-// Авто-сохранение при редактировании
-function triggerAutoSave() {
-  if (props.isEditing && props.modelValue?.id) {
-    if (updateTimeout) clearTimeout(updateTimeout)
-    updateTimeout = setTimeout(() => {
-      const taskId = props.modelValue!.id
-      const updatedData = {
-        title: form.title,
-        description: form.description,
-        status: form.status
-      }
-      store.update(taskId, updatedData)
-      emit('update', { id: taskId, ...updatedData })
-    }, 300)
-  }
-}
-
-// Сохранение через submit
+// ------------------ Сохранение через submit ------------------
 function onSubmit() {
   if (!form.title.trim()) return
 
-  const modelValue = props.modelValue
+  const model = props.modelValue
 
-  if (modelValue?.id && props.isEditing) {
-    const updatedData = {
-      title: form.title,
-      description: form.description,
-      status: form.status
-    }
-    store.update(modelValue.id, updatedData)
-    emit('update', { id: modelValue.id, ...updatedData })
+  if (model?.id && props.isEditing) {
+    store.update(model.id, { ...form })
+    emit('update', { id: model.id, ...form })
     emit('update:modelValue', null)
   } else {
-    emit('save', {
-      title: form.title,
-      description: form.description,
-      status: form.status
-    })
+    emit('save', { ...form })
     resetForm()
   }
 }
 
+// ------------------ Отмена ------------------
 function onCancel() {
   emit('update:modelValue', null)
   resetForm()
