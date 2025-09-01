@@ -6,7 +6,6 @@ import type { TaskDTO, TaskStatus } from '~/types/task'
 const props = defineProps({
   modelValue: {
     type: Object as PropType<TaskDTO | null>,
-    required: false,
     default: null
   },
   isEditing: {
@@ -23,91 +22,92 @@ const emit = defineEmits<{
 
 const store = useTaskStore()
 
-// Реактивная форма
+// Таймер для авто-сохранения
+let updateTimeout: NodeJS.Timeout | null = null
+onUnmounted(() => {
+  if (updateTimeout) clearTimeout(updateTimeout)
+})
+
+// Форму делаем реактивной, но значения берем из props через computed
 const form = reactive({
-  title: '',
-  description: '',
-  status: 'todo' as TaskStatus
+  title: computed({
+    get: () => props.modelValue?.title ?? '',
+    set: (val) => {
+      if (props.modelValue) props.modelValue.title = val
+      triggerAutoSave()
+    }
+  }),
+  description: computed({
+    get: () => props.modelValue?.description ?? '',
+    set: (val) => {
+      if (props.modelValue) props.modelValue.description = val
+      triggerAutoSave()
+    }
+  }),
+  status: computed({
+    get: () => props.modelValue?.status ?? 'todo',
+    set: (val) => {
+      if (props.modelValue) props.modelValue.status = val
+      triggerAutoSave()
+    }
+  })
 })
-
-// Вычисляемое свойство для синхронизации с props
-const currentTask = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
-
-// Заполняем форму данными при монтировании, если есть modelValue
-if (props.modelValue) {
-  form.title = props.modelValue.title
-  form.description = props.modelValue.description || ''
-  form.status = props.modelValue.status
-}
 
 // Сброс формы
-const resetForm = () => {
-  form.title = ''
-  form.description = ''
-  form.status = 'todo'
+function resetForm() {
+  if (!props.modelValue) {
+    form.title = ''
+    form.description = ''
+    form.status = 'todo'
+  }
 }
 
-// Таймер для дебаунса
-let updateTimeout: NodeJS.Timeout | null = null
-
-// Обработчик изменений полей (для дебаунса при редактировании)
-const onFieldChange = () => {
-  // Если не редактируем существующую задачу, выходим
-  if (!props.isEditing || !props.modelValue?.id) {
-    return
+// Авто-сохранение при редактировании
+function triggerAutoSave() {
+  if (props.isEditing && props.modelValue?.id) {
+    if (updateTimeout) clearTimeout(updateTimeout)
+    updateTimeout = setTimeout(() => {
+      const taskId = props.modelValue!.id
+      const updatedData = {
+        title: form.title,
+        description: form.description,
+        status: form.status
+      }
+      store.update(taskId, updatedData)
+      emit('update', { id: taskId, ...updatedData })
+    }, 300)
   }
-
-  // Очищаем предыдущий таймаут
-  if (updateTimeout) {
-    clearTimeout(updateTimeout)
-  }
-
-  // Устанавливаем новый таймаут для обновления
-  updateTimeout = setTimeout(() => {
-    if (props.modelValue?.id) {
-      store.update(props.modelValue.id, { ...form })
-      emit('update', {
-        id: props.modelValue.id,
-        ...form
-      })
-    }
-  }, 300)
 }
 
-// Обработчик отправки формы
+// Сохранение через submit
 function onSubmit() {
   if (!form.title.trim()) return
 
-  if (props.modelValue?.id && props.isEditing) {
-    // Явное обновление при сохранении
-    store.update(props.modelValue.id, { ...form })
-    emit('update', {
-      id: props.modelValue.id,
-      ...form
-    })
+  const modelValue = props.modelValue
+
+  if (modelValue?.id && props.isEditing) {
+    const updatedData = {
+      title: form.title,
+      description: form.description,
+      status: form.status
+    }
+    store.update(modelValue.id, updatedData)
+    emit('update', { id: modelValue.id, ...updatedData })
     emit('update:modelValue', null)
   } else {
-    // Создание новой задачи
-    emit('save', { ...form })
+    emit('save', {
+      title: form.title,
+      description: form.description,
+      status: form.status
+    })
     resetForm()
   }
 }
 
-// Обработчик отмены
 function onCancel() {
   emit('update:modelValue', null)
   resetForm()
 }
-
-// Очистка таймера при размонтировании
-onUnmounted(() => {
-  if (updateTimeout) {
-    clearTimeout(updateTimeout)
-  }
-})
 </script>
 
 <template>
@@ -118,7 +118,6 @@ onUnmounted(() => {
 
     <input
         v-model="form.title"
-        @input="onFieldChange"
         placeholder="Title *"
         required
         class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -126,7 +125,6 @@ onUnmounted(() => {
 
     <textarea
         v-model="form.description"
-        @input="onFieldChange"
         placeholder="Description"
         rows="3"
         class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -134,7 +132,6 @@ onUnmounted(() => {
 
     <select
         v-model="form.status"
-        @change="onFieldChange"
         class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       <option value="todo">To Do</option>
