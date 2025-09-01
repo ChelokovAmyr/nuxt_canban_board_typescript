@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue'
 import { useTaskStore } from '~/stores/taskStore'
 import type { TaskDTO, TaskStatus } from '~/types/task'
 import TaskForm from '~/components/TaskForm.vue'
-import KanbanBoard from '~/components/KanbanBoard.vue'
 
 const store = useTaskStore()
 const editingTask = ref<TaskDTO | undefined>(undefined)
@@ -106,6 +105,11 @@ function statusClass(status: TaskStatus) {
       @edit="editTask"
       @delete="deleteTask"
       @updateStatus="updateTaskStatus"
+    />
+    <TaskGrid
+      :tasks="store.tasks"
+      @edit="editTask"
+      @delete="deleteTask"
     />
   </div>
 </template>
