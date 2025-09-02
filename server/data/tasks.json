@@ -54,5 +54,12 @@
     "title": "Интеграция с аналитикой",
     "description": "Добавить Google Analytics и метрики производительности",
     "status": "done"
+  },
+  {
+    "id": "eb30253d-c047-44ad-a187-452b5e3e1edb",
+    "createdAt": "2025-09-02T11:32:30.703Z",
+    "title": "Собес",
+    "description": "Пройди его!",
+    "status": "todo"
   }
 ]

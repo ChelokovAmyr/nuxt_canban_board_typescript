@@ -106,19 +106,19 @@ function onCancel() {
 <template>
   <form @submit.prevent="onSubmit" class="mb-4 space-y-2 p-4 border rounded">
     <h2 class="text-lg font-bold mb-2">
-      {{ isEditing ? 'Edit Task' : 'Create New Task' }}
+      {{ isEditing ? 'Изменить' : 'Создать новую таску' }}
     </h2>
 
     <input
         v-model="form.title"
-        placeholder="Title *"
+        placeholder="Заголовок *"
         required
         class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
 
     <textarea
         v-model="form.description"
-        placeholder="Description"
+        placeholder="Описание"
         rows="3"
         class="border px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
     />
@@ -137,7 +137,7 @@ function onCancel() {
           type="submit"
           class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
       >
-        {{ isEditing ? 'Update Task' : 'Add Task' }}
+        {{ isEditing ? 'Обновить таску' : 'Добавить таску' }}
       </button>
 
       <button
@@ -146,7 +146,7 @@ function onCancel() {
           @click="onCancel"
           class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
       >
-        Cancel
+        Отменить
       </button>
     </div>
   </form>

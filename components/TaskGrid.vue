@@ -22,8 +22,8 @@
             <h4 class="card-title">{{ element.title }}</h4>
             <p class="card-desc">{{ element.description }}</p>
             <div class="actions">
-              <button class="edit-btn" @click="$emit('edit', element)">Edit</button>
-              <button class="delete-btn" @click="$emit('delete', element)">Delete</button>
+              <button class="edit-btn" @click="$emit('edit', element)">Изменить</button>
+              <button class="delete-btn" @click="$emit('delete', element)">Удалить</button>
             </div>
           </div>
         </template>

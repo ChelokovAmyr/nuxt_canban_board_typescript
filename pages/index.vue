@@ -21,7 +21,7 @@ function editTask(task: TaskDTO) {
 
 async function deleteTask(task: TaskDTO) {
   if (!task.id) return
-  if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+  if (confirm(`Вы уверены удалить "${task.title}"?`)) {
     await store.remove(task.id)
   }
 }
@@ -62,7 +62,7 @@ function statusClass(status: TaskStatus) {
 
 <template>
   <div class="container mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">Tasks Dashboard</h1>
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Дешборд с тасками</h1>
 
     <!-- Tab Navigation -->
     <div class="mb-6 flex gap-2 border-b border-gray-200 pb-4">
@@ -75,7 +75,7 @@ function statusClass(status: TaskStatus) {
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         ]"
       >
-        📋 List View
+        📋 Постраничный вывод
       </button>
       <button
           @click="currentTab = 'kanban'"
@@ -86,7 +86,7 @@ function statusClass(status: TaskStatus) {
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
         ]"
       >
-        🗂️ Kanban View
+        🗂️ Канбан Доска
       </button>
     </div>
 
@@ -117,7 +117,7 @@ function statusClass(status: TaskStatus) {
                 {{ task.status }}
               </span>
               <span class="text-sm text-gray-500">
-                Created: {{ new Date(task.createdAt).toLocaleDateString() }}
+                Создан: {{ new Date(task.createdAt).toLocaleDateString() }}
               </span>
             </div>
           </div>
@@ -126,13 +126,13 @@ function statusClass(status: TaskStatus) {
                 @click="editTask(task)"
                 class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
             >
-              ✏️ Edit
+              ✏️ Изменить
             </button>
             <button
                 @click="deleteTask(task)"
                 class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
             >
-              🗑️ Delete
+              🗑️ Удалить
             </button>
           </div>
         </div>
@@ -164,7 +164,7 @@ function statusClass(status: TaskStatus) {
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
           <div class="text-2xl font-bold text-gray-800">{{ totalTasks }}</div>
-          <div class="text-sm text-gray-600">Total Tasks</div>
+          <div class="text-sm text-gray-600">Всего тасок</div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
           <div class="text-2xl font-bold text-blue-600">{{ todoTasks }}</div>
